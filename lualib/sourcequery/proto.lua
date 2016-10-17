@@ -105,10 +105,8 @@ function _M.receive(self)
                 end
                 packets[packetnumber + 1] = data
             else
-                if 1 == i then
-                    if packetsid < 0 then
-                        compressed = true
-                    end
+                if 1 == i and packetsid < 0 then
+                    compressed = true
                 end
                 local _total, err = struct.get_byte(buff)
                 if not _total then

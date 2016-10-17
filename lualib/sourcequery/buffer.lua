@@ -50,14 +50,14 @@ function _M.getall(self)
     if not self.pool then
         return nil, 'not initialized'
     end
-    if self.remain() > 0 then
+    if self.remaining(self) > 0 then
         return self.pool:sub(self.position + 1)
     else
         return nil, 'nothing left in buffer'
     end
 end
 
-function _M.remain(self)
+function _M.remaining(self)
     if not self.pool then
         return nil, 'not initialized'
     end

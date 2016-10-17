@@ -3,6 +3,7 @@
     https://developer.valvesoftware.com/wiki/Server_queries#Data_Types
 ]]--
 local bit = require 'bit'
+local ffi = require 'ffi'
 local byte = string.byte
 local char = string.char
 local reverse = string.reverse
@@ -15,6 +16,15 @@ end
 local _M = new_tab(0, 8)
 
 _M._VERSION = '0.1.0'
+
+-- 1 byte char
+function _M.get_char(buff)
+    local data, err = buff:get(1)
+    if not data then
+        return nil, err
+    end
+    return data
+end
 
 -- 8 bit unsigned int
 function _M.get_byte(buff)
@@ -64,13 +74,13 @@ function _M.get_longlong(buff)
     if not data then
         return nil, err
     end
-    local int = 0
+    local int = ffi.new('uint64_t', 0)
     data = reverse(data)
     for i = 1, 8 do
         local part = byte(data, i)
         int = int * 0x100 + part
     end
-    return int
+    return tostring(int):sub(1, -4)
 end
 
 -- 32 bit float, little endian
@@ -101,13 +111,15 @@ end
 function _M.get_string(buff)
     local s = ''
     local split = char(0)
+    local part = ''
     repeat
-        local data, err = buff:get(1)
-        if not data then
+        s = s .. part
+        local err
+        part, err = buff:get(1)
+        if not part then
             return nil, err, s
         end
-        s = s .. data
-    until split == data
+    until split == part
     return s
 end
 
