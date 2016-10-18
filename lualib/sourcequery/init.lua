@@ -19,7 +19,7 @@ _M._VERSION = '0.1.1'
 
 local mt = { __index = _M }
 
-function _M.new(self, host, port, timeout)
+function _M.new(self, host, port, timeout, engine)
     if not host then
         return nil, 'host ip address required'
     end
@@ -29,11 +29,13 @@ function _M.new(self, host, port, timeout)
     if not sock then
         return nil, err
     end
+    engine = engine or 'source'
     return setmetatable({
         sock = sock,
         host = host,
         port = port,
         timeout = timeout,
+        engine = engine,
     }, mt)
 end
 
@@ -47,8 +49,8 @@ function _M.ping(self)
     if not ok then
         return nil, err
     end
-    local p = proto:new(sock)
-    ok, err = p:send(char(packet.A2A_PING))
+    local p = proto:new(sock, self.engine)
+    ok, err = p:send(packet.A2A_PING)
     if not ok then
         sock:close()
         return nil, err
@@ -59,7 +61,7 @@ function _M.ping(self)
     if not b then
         return nil, err
     end
-    ok, err = struct.get_byte(b)
+    ok, err = struct.get_char(b)
     if not ok then
         return nil, err
     end
@@ -77,9 +79,9 @@ function _M.getinfo(self)
     if not ok then
         return nil, err
     end
-    local p = proto:new(sock)
+    local p = proto:new(sock, self.engine)
     local query = ('%sSource Engine Query%s'):format(
-        char(packet.A2S_INFO), char(0)
+        packet.A2S_INFO, char(0)
     )
     ok, err = p:send(query)
     if not ok then
@@ -92,7 +94,7 @@ function _M.getinfo(self)
         return nil, err
     end
     local info = new_tab(0, 32)
-    local t, err = struct.get_byte(b)
+    local t, err = struct.get_char(b)
     if not t then
         return nil, err
     end
@@ -180,6 +182,144 @@ function _M.getinfo(self)
         return nil, 'wrong packet id'
     end
         
+end
+
+function _M.getchallenge(self, packetid, raw)
+    local sock = self.sock
+    if not sock then
+        return nil, 'not initialized'
+    end
+    if not packetid then
+        return nil, 'packet id required'
+    end
+    sock:settimeout(self.timeout)
+    local ok, err = sock:setpeername(self.host, self.port)
+    if not ok then
+        return nil, err
+    end
+    local p = proto:new(sock, self.engine)
+    ok, err = p:send(packetid .. char(0xff):rep(4))
+    if not ok then
+        sock:close()
+        return nil, err
+    end
+    local b, err = p:receive()
+    if not b then
+        sock:close()
+        return nil, err
+    end
+    local _packetid, err = struct.get_char(b)
+    if packet.S2A_CHALLENGE == _packetid then
+        local challange, err
+        if raw then
+            challange, err = b:get(4)
+        else
+            challange, err = struct.get_long(b)
+        end
+        if not challange then
+            sock:close()
+            return nil, 'failed to get challange : ' .. err
+        end
+        return p, challange
+    else
+        sock:close()
+        return nil, 'wrong packet id, expected S2A_CHALLENGE'
+    end
+end
+
+function _M.getplayers(self)
+    local p, challange = self.getchallenge(self, packet.A2S_PLAYER, true)
+    if not p then
+        return nil, challange
+    end
+    local sock = p.sock
+    if not sock then
+        return nil, 'failed to get udp socket handle from proto'
+    end
+    local ok, err = p:send(packet.A2S_PLAYER .. challange)
+    if not ok then
+        sock:close()
+        return nil, err
+    end
+    local b, err = p:receive()
+    sock:close()
+    if not b then
+        return nil, err
+    end
+    local _packetid, err = struct.get_char(b)
+    if not _packetid then
+        return nil, err
+    end
+    if packet.S2A_PLAYER == _packetid then
+        local _count, err = struct.get_byte(b)
+        if not _count then
+            return nil, 'failed to get size of players'
+        end
+        local players = new_tab(_count, 0)
+        if _count > 0 then
+            for i = 1, _count do
+                local _t = new_tab(0, 4)
+                _t.Index = struct.get_byte(b)
+                _t.Name = struct.get_string(b)
+                _t.Score = struct.get_long(b)
+                _t.Duration = struct.get_float(b)
+                players[i] = _t
+            end
+        end
+        return players
+    else
+        return nil, 'wrong packet id'
+    end
+end
+
+function _M.getrules(self)
+    local p, challange = self.getchallenge(self, packet.A2S_RULES, true)
+    if not p then
+        return nil, challange
+    end
+    local sock = p.sock
+    if not sock then
+        return nil, 'failed to get udp socket handle from proto'
+    end
+    local ok, err = p:send(packet.A2S_RULES .. challange)
+    if not ok then
+        sock:close()
+        return nil, err
+    end
+    local b, err = p:receive()
+    sock:close()
+    if not b then
+        return nil, err
+    end
+    local _packetid, err = struct.get_char(b)
+    if not _packetid then
+        return nil, err
+    end
+    if packet.S2A_RULES == _packetid then
+        local _count, err = struct.get_short(b)
+        if not _count then
+            return nil, 'failed to get size of rules : ' .. err
+        elseif _count < 0 then
+            return nil, 'wrong size of rules : ' .. _count
+        end
+        local rules = new_tab(0, _count)
+        if _count > 0 then
+            for i = 1, _count do
+                local k, err = struct.get_string(b)
+                if not k then
+                    return nil, ('failed to get rule name of %d/%d : %s'):format(i, _count, err)
+                end
+                local v, err = struct.get_string(b)
+                if not v then
+                    return nil, ('failed to get rule value of %d/%d : %s'):format(i, _count, err)
+                end
+                rules[k] = v
+            end
+        end
+        return rules
+    else
+        return nil, 'wrong packet id'
+    end
 end
 
 return _M

@@ -12,21 +12,20 @@ _M._VERSION = '0.1.0'
 
 
 -- App to Server
-_M.A2S_INFO      = 0x54
-_M.A2S_PLAYER    = 0x55
-_M.A2S_RULES     = 0x56
-_M.A2S_SERVERQUERY_GETCHALLENGE = 0x57
+_M.A2S_INFO      = 'T'
+_M.A2S_PLAYER    = 'U'
+_M.A2S_RULES     = 'V'
+_M.A2S_SERVERQUERY_GETCHALLENGE = 'W'
 
 -- Server to App
-_M.S2A_CHALLENGE = 0x41
-_M.S2A_INFO      = 0x49
-_M.S2A_INFO_OLD  = 0x6D
-_M.S2A_PLAYER    = 0x44
-_M.S2A_RULES     = 0x45
-_M.S2A_RCON      = 0x6C
+_M.S2A_CHALLENGE = 'A'
+_M.S2A_INFO      = 'I'
+_M.S2A_INFO_OLD  = 'm'
+_M.S2A_PLAYER    = 'D'
+_M.S2A_RULES     = 'E'
 
 -- Deprecated 
-_M.A2A_PING      = 0x69
-_M.A2A_PONG      = 0x6A
+_M.A2A_PING      = 'i'
+_M.A2A_PONG      = 'j'
 
 return _M

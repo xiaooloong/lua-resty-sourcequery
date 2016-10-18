@@ -3,7 +3,6 @@
 
 local struct = require 'sourcequery.struct'
 local buffer = require 'sourcequery.buffer'
-local packet = require 'sourcequery.packet'
 local bit = require 'bit'
 local udp = ngx.socket.udp
 local crc32 = ngx.crc32_long
@@ -21,12 +20,12 @@ _M._VERSION = '0.1.0'
 
 local mt = { __index = _M }
 
-function _M.new(self, sock, goldengine)
+function _M.new(self, sock, engine)
     if not sock then
         return nil, 'udp socket handle required'
     end
     local sock = sock
-    local engine = goldengine or 'source'
+    engine = engine or 'source'
     return setmetatable({
         sock = sock,
         engine = engine,
@@ -84,7 +83,7 @@ function _M.receive(self)
                     id, packetsid
                 )
             end
-            if 'gold' == self.engine then
+            if 'source' ~= self.engine then
                 local combine, err = struct.get_byte(buff)
                 if not combine then
                     return nil, 'failed to get packet number : ' .. err
