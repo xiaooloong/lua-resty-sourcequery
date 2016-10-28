@@ -4,9 +4,12 @@
 ]]--
 local bit = require 'bit'
 local ffi = require 'ffi'
+local ffi_new = ffi.new
+local ffi_copy = ffi.copy
 local byte = string.byte
 local char = string.char
 local reverse = string.reverse
+local is_be = ffi.abi('be')
 
 local ok, new_tab = pcall(require, "table.new")
 if not ok then
@@ -41,13 +44,12 @@ function _M.get_short(buff)
     if not data then
         return nil, err
     end
-    local al = byte(data)
-    local ah = byte(data, 2)
-    local ax = ah * 0x100 + al
-    if ax > 0x7fff then
-        ax = ax - 0x10000
+    if is_be then
+        data = reverse(data)
     end
-    return ax
+    local short = ffi_new('int16_t[1]')
+    ffi_copy(short, data, 2)
+    return tonumber(short[0])
 end
 
 -- 32 bit signed int, little endian
@@ -56,16 +58,12 @@ function _M.get_long(buff)
     if not data then
         return nil, err
     end
-    local int = 0
-    data = reverse(data)
-    for i = 1, 4 do
-        local part = byte(data, i)
-        int = int * 0x100 + part
+    if is_be then
+        data = reverse(data)
     end
-    if int > 0x7fffffff then
-        int = int - 0x100000000
-    end
-    return int
+    local int = ffi_new('int32_t[1]')
+    ffi_copy(int, data, 4)
+    return tonumber(int[0])
 end
 
 -- 64 bit unsigned int, little endian
@@ -74,37 +72,26 @@ function _M.get_longlong(buff)
     if not data then
         return nil, err
     end
-    local int = ffi.new('uint64_t', 0)
-    data = reverse(data)
-    for i = 1, 8 do
-        local part = byte(data, i)
-        int = int * 0x100 + part
+    if is_be then
+        data = reverse(data)
     end
-    return tostring(int):sub(1, -4)
+    local int = ffi_new('uint64_t[1]', 0)
+    ffi_copy(int, data, 8)
+    return tostring(int[0]):sub(1, -4)
 end
 
 -- 32 bit float, little endian
--- https://en.wikipedia.org/wiki/Single-precision_floating-point_format
 function _M.get_float(buff)
     local data, err = buff:get(4)
     if not data then
         return nil, err
     end
-    data = reverse(data)
-    local int = 0
-    for i = 1, 4 do
-        local part = byte(data, i)
-        int = int * 0x100 + part
+    if is_be then
+        data = reverse(data)
     end
-    local s
-    if int > 0x7fffffff then
-        s = -1
-    else
-        s = 1
-    end
-    local f = int % 0x800000 + 0x800000
-    local e = bit.rshift(int, 23) % 0x100 - 127 - 23
-    return s * f * 2 ^ e
+    local float = ffi_new('float[1]')
+    ffi_copy(float, data, 4)
+    return tonumber(float[0])
 end
 
 -- string, terminated by 0x00
