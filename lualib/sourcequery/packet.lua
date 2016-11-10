@@ -6,7 +6,7 @@ if not ok then
     new_tab = function (narr, nrec) return {} end
 end
 
-local _M = new_tab(0, 16)
+local _M = new_tab(0, 32)
 
 _M._VERSION = '0.1.0'
 
@@ -27,5 +27,11 @@ _M.S2A_RULES     = 'E'
 -- Deprecated 
 _M.A2A_PING      = 'i'
 _M.A2A_PONG      = 'j'
+
+-- Rcon
+_M.SERVERDATA_AUTH           = 3
+_M.SERVERDATA_AUTH_RESPONSE  = 2
+_M.SERVERDATA_EXECCOMMAND    = 2
+_M.SERVERDATA_RESPONSE_VALUE = 0
 
 return _M

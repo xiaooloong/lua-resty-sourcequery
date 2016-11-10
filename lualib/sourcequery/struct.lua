@@ -6,6 +6,9 @@ local bit = require 'bit'
 local ffi = require 'ffi'
 local ffi_new = ffi.new
 local ffi_copy = ffi.copy
+local ffi_string = ffi.string
+local tonumber = tonumber
+local tostring = tostring
 local byte = string.byte
 local char = string.char
 local reverse = string.reverse
@@ -64,6 +67,19 @@ function _M.get_long(buff)
     local int = ffi_new('int32_t[1]')
     ffi_copy(int, data, 4)
     return tonumber(int[0])
+end
+
+function _M.set_long(data)
+    data = tonumber(data)
+    if not data then
+        return nil, 'wrong number'
+    end
+    local int = ffi_new('int32_t[1]', data)
+    local bin = ffi_string(int, 4)
+    if is_be then
+        bin = reverse(bin)
+    end
+    return bin
 end
 
 -- 64 bit unsigned int, little endian
