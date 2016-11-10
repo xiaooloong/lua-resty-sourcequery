@@ -67,8 +67,5 @@ ngx.say(ok, err)
   * 查询方法（ping, getinfo, getrules, getplayers）
   * RCON
 
-### 待实现的功能：
-  * bzip 解压
-
   [1]: http://openresty.org/
   [2]: https://github.com/xPaw/PHP-Source-Query

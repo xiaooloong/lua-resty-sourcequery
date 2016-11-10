@@ -3,6 +3,8 @@
 
 local struct = require 'sourcequery.struct'
 local buffer = require 'sourcequery.buffer'
+local bzlib = require 'resty.bzlib'
+local bz = bzlib:new()
 local bit = require 'bit'
 local udp = ngx.socket.udp
 local crc32 = ngx.crc32_long
@@ -168,16 +170,17 @@ function _M.receive(self)
         until i == total
         local data = table.concat(packets)
         if compressed then
-            return nil, 'data is compressed and this library is not support yet'
-            --[[
-            data = maybe_a_function_will_do_decompress(data)
+            local err
+            data, err = bz:decompress(data)
+            if not data then
+                return nil, 'decompress failed : ' .. err
+            end
             if rawsize ~= #data then
                 return nil, 'packet wrong size'
             end
             if crc32sum ~= crc32(data) then
                 return nil, 'packet bad checksum'
             end
-            ]]--
         end
         buff:set(data)
         struct.get_long(buff)
