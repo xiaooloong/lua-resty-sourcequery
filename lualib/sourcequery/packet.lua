@@ -8,7 +8,7 @@ end
 
 local _M = new_tab(0, 32)
 
-_M._VERSION = '0.1.0'
+_M._VERSION = '0.1.1'
 
 
 -- App to Server
@@ -23,6 +23,8 @@ _M.S2A_INFO      = 'I'
 _M.S2A_INFO_OLD  = 'm'
 _M.S2A_PLAYER    = 'D'
 _M.S2A_RULES     = 'E'
+-- Not documented but found in CS:GO and Insurgency
+_M.S2A_BANNED    = 'l'
 
 -- Deprecated 
 _M.A2A_PING      = 'i'

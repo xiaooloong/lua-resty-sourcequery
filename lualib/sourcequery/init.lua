@@ -15,7 +15,7 @@ end
 
 local _M = new_tab(0, 32)
 
-_M._VERSION = '1.2.0'
+_M._VERSION = '1.2.1'
 
 local mt = { __index = _M }
 
@@ -178,8 +178,11 @@ function _M.getinfo(self)
             info.BufferRemaining = b:getall()
         end
         return info
+    elseif packet.S2A_BANNED == t then
+        local msg = struct.get_string(b)
+        return nil, ('you got banned by server : %s'):format(msg)
     else
-        return nil, 'wrong packet id'
+        return nil, ('wrong packet id of %s(%d)'):format(t, t:byte())
     end
         
 end
@@ -221,9 +224,12 @@ function _M.getchallenge(self, packetid, raw)
             return nil, 'failed to get challange : ' .. err
         end
         return p, challange
+    elseif packet.S2A_BANNED == _packetid then
+        local msg = struct.get_string(b)
+        return nil, ('you got banned by server : %s'):format(msg)
     else
         sock:close()
-        return nil, 'wrong packet id, expected S2A_CHALLENGE'
+        return nil, ('wrong packet id of %s(%d), expected S2A_CHALLENGE'):format(t, t:byte())
     end
 end
 
@@ -267,8 +273,11 @@ function _M.getplayers(self)
             end
         end
         return players
+    elseif packet.S2A_BANNED == _packetid then
+        local msg = struct.get_string(b)
+        return nil, ('you got banned by server : %s'):format(msg)
     else
-        return nil, 'wrong packet id'
+        return nil, ('wrong packet id of %s(%d)'):format(_packetid, _packetid:byte())
     end
 end
 
@@ -317,8 +326,11 @@ function _M.getrules(self)
             end
         end
         return rules
+    elseif packet.S2A_BANNED == _packetid then
+        local msg = struct.get_string(b)
+        return nil, ('you got banned by server : %s'):format(msg)
     else
-        return nil, 'wrong packet id'
+        return nil, ('wrong packet id of %s(%d)'):format(_packetid, _packetid:byte())
     end
 end
 
