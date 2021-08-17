@@ -15,7 +15,7 @@ end
 
 local _M = new_tab(0, 32)
 
-_M._VERSION = '1.2.1'
+_M._VERSION = '1.2.2'
 
 local mt = { __index = _M }
 
@@ -89,15 +89,42 @@ function _M.getinfo(self)
         return nil, err
     end
     local b, err = p:receive()
-    sock:close()
     if not b then
+        sock:close()
         return nil, err
     end
-    local info = new_tab(0, 32)
     local t, err = struct.get_char(b)
     if not t then
+        sock:close()
         return nil, err
     end
+    if packet.S2A_CHALLENGE == t then
+        local challenge, err = b:get(4)
+        if not challenge then
+            sock:close()
+            return nil, err
+        end
+        local query = ('%sSource Engine Query%s%s'):format(
+            packet.A2S_INFO, char(0), challenge
+        )
+        ok, err = p:send(query)
+        if not ok then
+            sock:close()
+            return nil, err
+        end
+        b, err = p:receive()
+        sock:close()
+        if not b then
+            return nil, err
+        end
+        t, err = struct.get_char(b)
+        if not t then
+            return nil, err
+        end
+    else
+        sock:close()
+    end
+    local info = new_tab(0, 32)
     if packet.S2A_INFO == t then
         info.GoldSource  = false
         info.Protocol    = struct.get_byte(b)
