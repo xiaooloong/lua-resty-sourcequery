@@ -76,9 +76,9 @@ function _M.receive(self)
         if -1 == id then
             return nil, 'wrong rcon password'
         else
-            return nil, ('expect id of %d but received %d'):format(
+--[[             return nil, ('expect id of %d but received %d'):format(
                 self.id, id
-            )
+            ) ]]
         end
     end
     local packtype, err = struct.get_long(buff)
